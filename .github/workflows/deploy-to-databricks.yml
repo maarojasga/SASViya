@@ -1,0 +1,38 @@
+name: Deploy SAS Model to Databricks
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/**'
+      - 'models/**'
+      - 'scripts/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 📂 Install Databricks CLI
+        run: |
+          pip install databricks-cli
+          databricks configure --token <<< "${{ secrets.DATABRICKS_TOKEN }}"
+
+      - name: 📤 Upload Data to Databricks
+        run: |
+          databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
+          databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
+
+      - name: 📤 Upload Scripts to Databricks
+        run: |
+          databricks workspace import --format SOURCE scripts/data_preparation.py /Workspace/data_preparation.py
+          databricks workspace import --format SOURCE scripts/feature_engineering.py /Workspace/feature_engineering.py
+          databricks workspace import --format SOURCE models/logistic_regression.py /Workspace/logistic_regression.py
+
+      - name: 🚀 Run Notebook in Databricks
+        run: |
+          databricks jobs run-now --job-id ${{ secrets.DATABRICKS_JOB_ID }}
