@@ -67,7 +67,7 @@ jobs:
           echo "✅ model_predictions.csv uploaded!"
         shell: bash
 
-      - name: 📤 Upload Scripts to Databricks (Only if Not Exists)
+      - name: 📤 Upload Scripts to Databricks (Overwrite train_model.py)
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
@@ -75,20 +75,24 @@ jobs:
           upload_script() {
             local script_path=$1
             local workspace_path=$2
+            local overwrite=$3
 
-            echo "🔹 Checking if ${workspace_path} exists in Databricks..."
-            if databricks workspace ls "$(dirname ${workspace_path})" | grep -q "$(basename ${workspace_path})"; then
-              echo "✅ ${workspace_path} already exists. Skipping upload."
+            echo "🚀 Uploading ${script_path}..."
+            if [[ "$overwrite" == "true" ]]; then
+              databricks workspace import --format SOURCE --language PYTHON --overwrite "${script_path}" "${workspace_path}"
             else
-              echo "🚀 Uploading ${script_path}..."
-              databricks workspace import --format SOURCE --language PYTHON "${script_path}" "${workspace_path}"
-              echo "✅ ${workspace_path} uploaded successfully!"
+              if databricks workspace ls "$(dirname ${workspace_path})" | grep -q "$(basename ${workspace_path})"; then
+                echo "✅ ${workspace_path} already exists. Skipping upload."
+              else
+                databricks workspace import --format SOURCE --language PYTHON "${script_path}" "${workspace_path}"
+              fi
             fi
+            echo "✅ ${workspace_path} uploaded successfully!"
           }
 
-          # Subir archivos de scripts
-          upload_script "scripts/data_preparation.py" "/Workspace/data_preparation.py"
-          upload_script "scripts/feature_engineering.py" "/Workspace/feature_engineering.py"
+          # Subir archivos sin sobreescribir
+          upload_script "scripts/data_preparation.py" "/Workspace/data_preparation.py" "false"
+          upload_script "scripts/feature_engineering.py" "/Workspace/feature_engineering.py" "false"
 
           # CREAR CARPETA /Workspace/models/ SI NO EXISTE
           echo "🔹 Checking if /Workspace/models exists..."
@@ -100,8 +104,8 @@ jobs:
             echo "✅ /Workspace/models already exists."
           fi
 
-          # Subir modelo de entrenamiento
-          upload_script "models/train_model.py" "/Workspace/models/train_model.py"
+          # Subir modelo de entrenamiento y sobreescribir SIEMPRE
+          upload_script "models/train_model.py" "/Workspace/models/train_model.py" "true"
         shell: bash
 
       - name: 🚀 Run Databricks Job
