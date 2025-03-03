@@ -59,11 +59,11 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           echo "🚀 Uploading dataset.csv..."
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
+          databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
           echo "✅ dataset.csv uploaded!"
 
           echo "🚀 Uploading model_predictions.csv..."
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
+          databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
           echo "✅ model_predictions.csv uploaded!"
         shell: bash
 
@@ -86,8 +86,21 @@ jobs:
             fi
           }
 
+          # Subir archivos de scripts
           upload_script "scripts/data_preparation.py" "/Workspace/data_preparation.py"
           upload_script "scripts/feature_engineering.py" "/Workspace/feature_engineering.py"
+
+          # CREAR CARPETA /Workspace/models/ SI NO EXISTE
+          echo "🔹 Checking if /Workspace/models exists..."
+          if ! databricks workspace ls /Workspace | grep -q "models"; then
+            echo "🚀 Creating /Workspace/models directory..."
+            databricks workspace mkdirs /Workspace/models
+            echo "✅ /Workspace/models created!"
+          else
+            echo "✅ /Workspace/models already exists."
+          fi
+
+          # Subir modelo de entrenamiento
           upload_script "models/train_model.py" "/Workspace/models/train_model.py"
         shell: bash
 
