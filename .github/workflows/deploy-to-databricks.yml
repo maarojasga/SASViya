@@ -77,7 +77,7 @@ jobs:
           echo "✅ data_preparation.py uploaded!"
 
           echo "🚀 Uploading feature_engineering.py..."
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE scripts/feature_engineering.py /Workspace/feature_engineering.py
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE --language PYTHON scripts/feature_engineering.py /Workspace/feature_engineering.py
           echo "✅ feature_engineering.py uploaded!"
 
           echo "🚀 Uploading train_model.py..."
