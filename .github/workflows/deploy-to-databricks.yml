@@ -31,12 +31,12 @@ jobs:
           pip install --upgrade databricks-cli
           databricks --version
 
-      - name: 🔍 Validate Databricks CLI Configuration
+      - name: 🔍 Configure Databricks CLI
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "🔹 Configuring Databricks CLI..."
+          echo "🔹 Setting up Databricks CLI..."
 
           if [[ -z "$DATABRICKS_HOST" ]]; then
             echo "❌ ERROR: DATABRICKS_HOST is not set!" && exit 1
@@ -45,41 +45,52 @@ jobs:
             echo "❌ ERROR: DATABRICKS_TOKEN is not set!" && exit 1
           fi
 
-          # Export variables for Databricks CLI
+          echo "🔹 Exporting Databricks credentials..."
           export DATABRICKS_HOST=$DATABRICKS_HOST
           export DATABRICKS_TOKEN=$DATABRICKS_TOKEN
 
-          # Test Databricks CLI connection
-          echo "🔹 Listing Databricks Clusters..."
+          echo "🔹 Testing Databricks connection..."
           databricks clusters list
+        shell: bash
 
       - name: 📤 Upload Data to Databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           echo "🚀 Uploading dataset.csv..."
-          databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
           echo "✅ dataset.csv uploaded!"
 
           echo "🚀 Uploading model_predictions.csv..."
-          databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
           echo "✅ model_predictions.csv uploaded!"
+        shell: bash
 
       - name: 📤 Upload Scripts to Databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           echo "🚀 Uploading data_preparation.py..."
-          databricks workspace import --format SOURCE scripts/data_preparation.py /Workspace/data_preparation.py
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE scripts/data_preparation.py /Workspace/data_preparation.py
           echo "✅ data_preparation.py uploaded!"
 
           echo "🚀 Uploading feature_engineering.py..."
-          databricks workspace import --format SOURCE scripts/feature_engineering.py /Workspace/feature_engineering.py
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE scripts/feature_engineering.py /Workspace/feature_engineering.py
           echo "✅ feature_engineering.py uploaded!"
 
           echo "🚀 Uploading train_model.py..."
-          databricks workspace import --format SOURCE models/train_model.py /Workspace/models/train_model.py
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE models/train_model.py /Workspace/models/train_model.py
           echo "✅ train_model.py uploaded!"
+        shell: bash
 
       - name: 🚀 Run Databricks Job
         env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
         run: |
           echo "🔹 Running Databricks Job with ID: ${DATABRICKS_JOB_ID}"
-          databricks jobs run-now --job-id ${DATABRICKS_JOB_ID}
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks jobs run-now --job-id ${DATABRICKS_JOB_ID}
+        shell: bash
