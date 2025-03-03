@@ -73,7 +73,7 @@ jobs:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           echo "🚀 Uploading data_preparation.py..."
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE scripts/data_preparation.py /Workspace/data_preparation.py
+          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE --language PYTHON scripts/data_preparation.py /Workspace/data_preparation.py
           echo "✅ data_preparation.py uploaded!"
 
           echo "🚀 Uploading feature_engineering.py..."
