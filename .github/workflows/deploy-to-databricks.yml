@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths:
-      - 'data/**'
-      - 'models/**'
-      - 'scripts/**'
+      - "data/**"
+      - "models/**"
+      - "scripts/**"
 
 jobs:
   deploy:
@@ -18,13 +18,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: 🛠️ Print Environment Variables (Debug)
-        run: |
-          echo "🔹 Checking Databricks Environment Variables..."
-          echo "DATABRICKS_HOST is set (masked)"
-          echo "DATABRICKS_JOB_ID is set to: ${{ secrets.DATABRICKS_JOB_ID }}"
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
+        run: |
+          echo "🔹 Checking Databricks Environment Variables..."
+          echo "DATABRICKS_HOST is set (masked)"
+          echo "DATABRICKS_JOB_ID is set to: ${DATABRICKS_JOB_ID}"
 
       - name: 📂 Install Databricks CLI
         run: |
@@ -32,25 +32,26 @@ jobs:
           databricks --version
 
       - name: 🔍 Validate Databricks CLI Configuration
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           echo "🔹 Configuring Databricks CLI..."
 
-          # Validar que los secretos estén configurados
-          if [[ -z "${{ secrets.DATABRICKS_HOST }}" ]]; then
+          if [[ -z "$DATABRICKS_HOST" ]]; then
             echo "❌ ERROR: DATABRICKS_HOST is not set!" && exit 1
           fi
-          if [[ -z "${{ secrets.DATABRICKS_TOKEN }}" ]]; then
+          if [[ -z "$DATABRICKS_TOKEN" ]]; then
             echo "❌ ERROR: DATABRICKS_TOKEN is not set!" && exit 1
           fi
 
-          # Exportar variables para Databricks CLI
-          export DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST }}
-          export DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN }}
+          # Export variables for Databricks CLI
+          export DATABRICKS_HOST=$DATABRICKS_HOST
+          export DATABRICKS_TOKEN=$DATABRICKS_TOKEN
 
-          # Probar conexión con Databricks
+          # Test Databricks CLI connection
           echo "🔹 Listing Databricks Clusters..."
           databricks clusters list
-      shell: bash
 
       - name: 📤 Upload Data to Databricks
         run: |
@@ -61,7 +62,6 @@ jobs:
           echo "🚀 Uploading model_predictions.csv..."
           databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
           echo "✅ model_predictions.csv uploaded!"
-      shell: bash
 
       - name: 📤 Upload Scripts to Databricks
         run: |
@@ -76,10 +76,10 @@ jobs:
           echo "🚀 Uploading train_model.py..."
           databricks workspace import --format SOURCE models/train_model.py /Workspace/models/train_model.py
           echo "✅ train_model.py uploaded!"
-      shell: bash
 
       - name: 🚀 Run Databricks Job
+        env:
+          DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
         run: |
-          echo "🔹 Running Databricks Job with ID: ${{ secrets.DATABRICKS_JOB_ID }}"
-          databricks jobs run-now --job-id ${{ secrets.DATABRICKS_JOB_ID }}
-      shell: bash
+          echo "🔹 Running Databricks Job with ID: ${DATABRICKS_JOB_ID}"
+          databricks jobs run-now --job-id ${DATABRICKS_JOB_ID}
