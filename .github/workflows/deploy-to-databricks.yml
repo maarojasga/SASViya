@@ -20,8 +20,8 @@ jobs:
       - name: 📂 Install Databricks CLI
         run: |
           pip install databricks-cli
-          databricks configure --token <<< "${{ secrets.DATABRICKS_TOKEN }}"
-
+          databricks configure --host ${{ secrets.DATABRICKS_HOST }} --token ${{ secrets.DATABRICKS_TOKEN }}
+          
       - name: 📤 Upload Data to Databricks
         run: |
           databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
