@@ -17,22 +17,57 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v3
 
+      - name: 🛠️ Print Environment Variables (Debug)
+        run: |
+          echo "🔹 Checking Databricks Environment Variables..."
+          echo "DATABRICKS_HOST is set to: ${DATABRICKS_HOST}"
+          echo "DATABRICKS_JOB_ID is set to: ${DATABRICKS_JOB_ID}"
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
+
       - name: 📂 Install Databricks CLI
         run: |
           pip install databricks-cli
+          databricks --version
+
+      - name: 🔍 Validate Databricks CLI Configuration
+        run: |
+          echo "🔹 Configuring Databricks CLI..."
+          if [[ -z "${{ secrets.DATABRICKS_HOST }}" ]]; then
+            echo "❌ ERROR: DATABRICKS_HOST is not set!" && exit 1
+          fi
+          if [[ -z "${{ secrets.DATABRICKS_TOKEN }}" ]]; then
+            echo "❌ ERROR: DATABRICKS_TOKEN is not set!" && exit 1
+          fi
           databricks configure --host ${{ secrets.DATABRICKS_HOST }} --token ${{ secrets.DATABRICKS_TOKEN }}
-          
+          echo "✅ Databricks CLI configured successfully!"
+
       - name: 📤 Upload Data to Databricks
         run: |
+          echo "🚀 Uploading dataset.csv..."
           databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
+          echo "✅ dataset.csv uploaded!"
+          
+          echo "🚀 Uploading model_predictions.csv..."
           databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
+          echo "✅ model_predictions.csv uploaded!"
 
       - name: 📤 Upload Scripts to Databricks
         run: |
+          echo "🚀 Uploading data_preparation.py..."
           databricks workspace import --format SOURCE scripts/data_preparation.py /Workspace/data_preparation.py
+          echo "✅ data_preparation.py uploaded!"
+
+          echo "🚀 Uploading feature_engineering.py..."
           databricks workspace import --format SOURCE scripts/feature_engineering.py /Workspace/feature_engineering.py
+          echo "✅ feature_engineering.py uploaded!"
+
+          echo "🚀 Uploading logistic_regression.py..."
           databricks workspace import --format SOURCE models/logistic_regression.py /Workspace/logistic_regression.py
+          echo "✅ logistic_regression.py uploaded!"
 
       - name: 🚀 Run Notebook in Databricks
         run: |
+          echo "🔹 Running Databricks Job with ID: ${{ secrets.DATABRICKS_JOB_ID }}"
           databricks jobs run-now --job-id ${{ secrets.DATABRICKS_JOB_ID }}
