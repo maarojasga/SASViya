@@ -20,38 +20,48 @@ jobs:
       - name: 🛠️ Print Environment Variables (Debug)
         run: |
           echo "🔹 Checking Databricks Environment Variables..."
-          echo "DATABRICKS_HOST is set to: ${DATABRICKS_HOST}"
-          echo "DATABRICKS_JOB_ID is set to: ${DATABRICKS_JOB_ID}"
+          echo "DATABRICKS_HOST is set (masked)"
+          echo "DATABRICKS_JOB_ID is set to: ${{ secrets.DATABRICKS_JOB_ID }}"
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
 
       - name: 📂 Install Databricks CLI
         run: |
-          pip install databricks-cli
+          pip install --upgrade databricks-cli
           databricks --version
 
       - name: 🔍 Validate Databricks CLI Configuration
         run: |
           echo "🔹 Configuring Databricks CLI..."
+
+          # Validar que los secretos estén configurados
           if [[ -z "${{ secrets.DATABRICKS_HOST }}" ]]; then
             echo "❌ ERROR: DATABRICKS_HOST is not set!" && exit 1
           fi
           if [[ -z "${{ secrets.DATABRICKS_TOKEN }}" ]]; then
             echo "❌ ERROR: DATABRICKS_TOKEN is not set!" && exit 1
           fi
-          databricks configure --host ${{ secrets.DATABRICKS_HOST }} --token ${{ secrets.DATABRICKS_TOKEN }}
-          echo "✅ Databricks CLI configured successfully!"
+
+          # Exportar variables para Databricks CLI
+          export DATABRICKS_HOST=${{ secrets.DATABRICKS_HOST }}
+          export DATABRICKS_TOKEN=${{ secrets.DATABRICKS_TOKEN }}
+
+          # Probar conexión con Databricks
+          echo "🔹 Listing Databricks Clusters..."
+          databricks clusters list
+      shell: bash
 
       - name: 📤 Upload Data to Databricks
         run: |
           echo "🚀 Uploading dataset.csv..."
           databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
           echo "✅ dataset.csv uploaded!"
-          
+
           echo "🚀 Uploading model_predictions.csv..."
           databricks fs cp --overwrite data/model_predictions.csv dbfs:/mnt/datasets/model_predictions.csv
           echo "✅ model_predictions.csv uploaded!"
+      shell: bash
 
       - name: 📤 Upload Scripts to Databricks
         run: |
@@ -63,11 +73,13 @@ jobs:
           databricks workspace import --format SOURCE scripts/feature_engineering.py /Workspace/feature_engineering.py
           echo "✅ feature_engineering.py uploaded!"
 
-          echo "🚀 Uploading logistic_regression.py..."
-          databricks workspace import --format SOURCE models/logistic_regression.py /Workspace/logistic_regression.py
-          echo "✅ logistic_regression.py uploaded!"
+          echo "🚀 Uploading train_model.py..."
+          databricks workspace import --format SOURCE models/train_model.py /Workspace/models/train_model.py
+          echo "✅ train_model.py uploaded!"
+      shell: bash
 
-      - name: 🚀 Run Notebook in Databricks
+      - name: 🚀 Run Databricks Job
         run: |
           echo "🔹 Running Databricks Job with ID: ${{ secrets.DATABRICKS_JOB_ID }}"
           databricks jobs run-now --job-id ${{ secrets.DATABRICKS_JOB_ID }}
+      shell: bash
