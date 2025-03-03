@@ -67,22 +67,28 @@ jobs:
           echo "✅ model_predictions.csv uploaded!"
         shell: bash
 
-      - name: 📤 Upload Scripts to Databricks
+      - name: 📤 Upload Scripts to Databricks (Only if Not Exists)
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "🚀 Uploading data_preparation.py..."
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE --language PYTHON scripts/data_preparation.py /Workspace/data_preparation.py
-          echo "✅ data_preparation.py uploaded!"
+          upload_script() {
+            local script_path=$1
+            local workspace_path=$2
 
-          echo "🚀 Uploading feature_engineering.py..."
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE --language PYTHON scripts/feature_engineering.py /Workspace/feature_engineering.py
-          echo "✅ feature_engineering.py uploaded!"
+            echo "🔹 Checking if ${workspace_path} exists in Databricks..."
+            if databricks workspace ls "$(dirname ${workspace_path})" | grep -q "$(basename ${workspace_path})"; then
+              echo "✅ ${workspace_path} already exists. Skipping upload."
+            else
+              echo "🚀 Uploading ${script_path}..."
+              databricks workspace import --format SOURCE --language PYTHON "${script_path}" "${workspace_path}"
+              echo "✅ ${workspace_path} uploaded successfully!"
+            fi
+          }
 
-          echo "🚀 Uploading train_model.py..."
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks workspace import --format SOURCE models/train_model.py /Workspace/models/train_model.py
-          echo "✅ train_model.py uploaded!"
+          upload_script "scripts/data_preparation.py" "/Workspace/data_preparation.py"
+          upload_script "scripts/feature_engineering.py" "/Workspace/feature_engineering.py"
+          upload_script "models/train_model.py" "/Workspace/models/train_model.py"
         shell: bash
 
       - name: 🚀 Run Databricks Job
@@ -92,5 +98,5 @@ jobs:
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
         run: |
           echo "🔹 Running Databricks Job with ID: ${DATABRICKS_JOB_ID}"
-          DATABRICKS_HOST=$DATABRICKS_HOST DATABRICKS_TOKEN=$DATABRICKS_TOKEN databricks jobs run-now --job-id ${DATABRICKS_JOB_ID}
+          databricks jobs run-now --job-id ${DATABRICKS_JOB_ID}
         shell: bash
