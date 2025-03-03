@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.feature import VectorAssembler
 from pyspark.sql.functions import col
+
 "
 # Iniciar Spark
 spark = SparkSession.builder.appName('SAS_to_Databricks').getOrCreate()
