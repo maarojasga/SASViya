@@ -19,29 +19,38 @@ jobs:
       - name: 🛠️ Print Environment Variables (Debug)
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
         run: |
           echo "🔹 Checking Databricks Environment Variables..."
-          if [[ -z "$DATABRICKS_HOST" ]]; then echo "❌ ERROR: DATABRICKS_HOST is not set!" && exit 1; fi
-          if [[ -z "$DATABRICKS_TOKEN" ]]; then echo "❌ ERROR: DATABRICKS_TOKEN is not set!" && exit 1; fi
-          echo "✅ Databricks credentials are set."
+          echo "DATABRICKS_HOST is set (masked)"
+          echo "DATABRICKS_JOB_ID is set to: ${DATABRICKS_JOB_ID}"
 
       - name: 📂 Install Databricks CLI
         run: |
           pip install --upgrade databricks-cli
           databricks --version
 
-      - name: 🔑 Configure Databricks CLI
+      - name: 🔍 Configure Databricks CLI
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "🔹 Configuring Databricks CLI..."
-          mkdir -p ~/.databricks
-          echo -e "[DEFAULT]\nhost = $DATABRICKS_HOST\ntoken = $DATABRICKS_TOKEN" > ~/.databricks/config
-          cat ~/.databricks/config  # Debugging: Muestra el contenido del archivo
-          echo "✅ Databricks CLI configured successfully!"
+          echo "🔹 Setting up Databricks CLI..."
+
+          if [[ -z "$DATABRICKS_HOST" ]]; then
+            echo "❌ ERROR: DATABRICKS_HOST is not set!" && exit 1
+          fi
+          if [[ -z "$DATABRICKS_TOKEN" ]]; then
+            echo "❌ ERROR: DATABRICKS_TOKEN is not set!" && exit 1
+          fi
+
+          echo "🔹 Exporting Databricks credentials..."
+          export DATABRICKS_HOST=$DATABRICKS_HOST
+          export DATABRICKS_TOKEN=$DATABRICKS_TOKEN
+
+          echo "🔹 Testing Databricks connection..."
+          databricks clusters list
+        shell: bash
 
       - name: 📤 Upload Model and Data to Databricks
         run: |
@@ -59,3 +68,4 @@ jobs:
         run: |
           echo "🔹 Running Databricks Job with ID: ${DATABRICKS_JOB_ID}"
           databricks jobs run-now --job-id ${DATABRICKS_JOB_ID}
+        shell: bash
