@@ -64,6 +64,25 @@ jobs:
 
         shell: bash
 
+      - name: 📤 Upload Model and Scripts to Databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          echo "🚀 Uploading train_model.py..."
+          databricks workspace import --format SOURCE models/train_model.py /Workspace/models/train_model.py
+          echo "✅ train_model.py uploaded!"
+
+          echo "🚀 Uploading feature_engineering.py..."
+          databricks workspace import --format SOURCE models/feature_engineering.py /Workspace/models/feature_engineering.py
+          echo "✅ feature_engineering.py uploaded!"
+
+          echo "🚀 Uploading evaluate_model.py..."
+          databricks workspace import --format SOURCE models/evaluate_model.py /Workspace/models/evaluate_model.py
+          echo "✅ evaluate_model.py uploaded!"
+
+        shell: bash
+
       - name: 🚀 Run Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
