@@ -16,35 +16,33 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: 🛠️ Print Environment Variables (Debug)
+      - name: 🛠️ Validate Databricks Environment Variables
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
         run: |
-          echo "🔹 Checking Databricks Environment Variables..."
+          echo "🔹 Validating Databricks Credentials..."
           if [[ -z "$DATABRICKS_HOST" ]]; then echo "❌ ERROR: DATABRICKS_HOST is not set!" && exit 1; fi
           if [[ -z "$DATABRICKS_TOKEN" ]]; then echo "❌ ERROR: DATABRICKS_TOKEN is not set!" && exit 1; fi
-          echo "✅ Databricks credentials are set."
+          if [[ -z "$DATABRICKS_JOB_ID" ]]; then echo "❌ ERROR: DATABRICKS_JOB_ID is not set!" && exit 1; fi
+          echo "✅ Databricks credentials are correctly set."
 
       - name: 📂 Install Databricks CLI
         run: |
           pip install --upgrade databricks-cli
           databricks --version
 
-      - name: 🔑 Configure Databricks CLI (Non-Interactive)
+      - name: 🔑 Configure Databricks CLI
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           echo "🔹 Configuring Databricks CLI..."
-          mkdir -p ~/.databricks
-          echo "[DEFAULT]" > ~/.databricks/config
-          echo "host = $DATABRICKS_HOST" >> ~/.databricks/config
-          echo "token = $DATABRICKS_TOKEN" >> ~/.databricks/config
-          chmod 600 ~/.databricks/config
+          databricks configure --host "$DATABRICKS_HOST" --token "$DATABRICKS_TOKEN"
           echo "✅ Databricks CLI configured successfully!"
 
-      - name: 📤 Upload Model and Data to Databricks
+      - name: 📤 Upload Model and Dataset to Databricks
         run: |
           echo "🚀 Uploading train_model.ds2..."
           databricks fs cp --overwrite models/train_model.ds2 dbfs:/mnt/models/train_model.ds2
