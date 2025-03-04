@@ -1,0 +1,20 @@
+proc ds2;
+data scoring / overwrite=yes;
+    dcl double edad;
+    dcl double ingreso;
+    dcl double compra;
+    
+    method score();
+        if ingreso > 60000 then compra = 1;
+        else compra = 0;
+        return;
+    end;
+    
+    method run();
+        set work.training_data;
+        score();
+        output;
+    end;
+enddata;
+run;
+quit;
