@@ -18,4 +18,3 @@ data scoring / overwrite=yes;
 enddata;
 run;
 quit;
- 
