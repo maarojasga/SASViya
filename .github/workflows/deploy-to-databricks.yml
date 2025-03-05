@@ -53,9 +53,16 @@ jobs:
           databricks fs cp --overwrite data/dataset.csv dbfs:/mnt/datasets/dataset.csv
           echo "✅ dataset.csv uploaded!"
 
+          echo "🚀 Verifying dataset.csv..."
+          databricks fs ls dbfs:/mnt/datasets/
+
           echo "🚀 Uploading train_model.ds2..."
           databricks fs cp --overwrite models/train_model.ds2 dbfs:/mnt/models/train_model.ds2
           echo "✅ train_model.ds2 uploaded!"
+
+          echo "🚀 Verifying train_model.ds2..."
+          databricks fs ls dbfs:/mnt/models/
+
 
       - name: 🚀 Run Databricks Job with SAS Embedded Process
         env:
